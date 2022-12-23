@@ -1,6 +1,5 @@
 import os
 import socket
-import sys
 
 from pynvim import Nvim
 
@@ -8,10 +7,9 @@ MODULE_FILE = os.path.abspath(__file__)
 MODULE_PATH = os.path.dirname(MODULE_FILE)
 MODULE_NAME = os.path.basename(MODULE_PATH)
 
-if MODULE_PATH not in sys.path:
-    sys.path.append(MODULE_PATH)
-
-from streamer import PORT, SERVER
+SERVER = '127.0.0.1'
+PORT = 5116
+ADDRESS = (SERVER, PORT)
 
 
 class Window:
@@ -26,7 +24,6 @@ class Window:
 
     def toggle(self) -> None:
         cur_win = self.nvim.current.window
-
         if self.window not in self.nvim.windows:
             self._create_terminal_window()
 
@@ -73,8 +70,11 @@ class Window:
 
 
 def listen() -> None:
+    if ADDRESS is None:
+        raise ValueError
+
     server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server.bind((SERVER, PORT))
+    server.bind(ADDRESS)
 
     while True:
         data = server.recvfrom(1024)
