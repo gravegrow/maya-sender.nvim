@@ -1,13 +1,8 @@
-import os
 import sys
 
+from config import ADDRESS, PATH
 from pynvim import Nvim, command, plugin
 
-SERVER = "127.0.0.1"
-PORT = 5115
-ADDRESS = (SERVER, PORT)
-
-PATH = os.path.dirname(os.path.abspath(__file__))
 if PATH not in sys.path:
     sys.path.append(PATH)
 
@@ -29,19 +24,19 @@ class MayaScriptEditor:
     def send_buffer(self):
         sender.send_buffer(self.nvim, ADDRESS)
 
-    @command("MayaOpenLog", sync=True)
-    def toggle_log_widnow(self):
-        self.log_window.toggle()
-        if self.log_window.is_opened:
-            self._ensure_stream()
+    # @command("MayaOpenLog", sync=True)
+    # def toggle_log_widnow(self):
+    #     self.log_window.toggle()
+    #     if self.log_window.is_opened:
+    #         self._ensure_stream()
 
-    @command("MayaConnect", sync=True)
-    def start_stream(self):
-        self._ensure_stream()
+    # @command("MayaConnect", sync=True)
+    # def start_stream(self):
+    #     self._ensure_stream()
+    #
+    # @command("MayaDisconnect", sync=True)
+    # def stop_stream(self):
+    #     sender.stop_stream(ADDRESS)
 
-    @command("MayaDisconnect", sync=True)
-    def stop_stream(self):
-        sender.stop_stream(ADDRESS)
-
-    def _ensure_stream(self):
-        sender.ensure_stream(ADDRESS, (log.ADDRESS))
+    # def _ensure_stream(self):
+    #     sender.ensure_stream(ADDRESS, (log.ADDRESS))

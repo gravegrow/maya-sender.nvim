@@ -11,15 +11,16 @@ PYTHON_VERSION = version_info.major
 
 def start(address: tuple):
     global CALLBACK
-    CALLBACK = globals().get("CALLBACK")
-    if CALLBACK is None:
+    if globals().get("CALLBACK") is None:
         add_callback = om.MCommandMessage.addCommandOutputCallback
         CALLBACK = add_callback(callback, address)
 
 
 def stop():
-    global CALLBACK
-    om.MMessage.removeCallback(CALLBACK)
+    if globals().get("CALLBACK"):
+        CALLBACK = globals().get("CALLBACK")
+        print(f"Found callback: {CALLBACK}")
+        om.MMessage.removeCallback(CALLBACK)
     CALLBACK = None
 
 

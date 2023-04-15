@@ -1,15 +1,8 @@
-import os
 import socket
 
+import sender
+from config import COMMAND_ADDRESS, LOGGER_ADDRESS, MODULE_FILE, MODULE_PATH
 from pynvim import Nvim
-
-MODULE_FILE = os.path.abspath(__file__)
-MODULE_PATH = os.path.dirname(MODULE_FILE)
-MODULE_NAME = os.path.basename(MODULE_PATH)
-
-SERVER = '127.0.0.1'
-PORT = 5116
-ADDRESS = (SERVER, PORT)
 
 
 class Window:
@@ -31,11 +24,11 @@ class Window:
                 self._create_terminal_buffer()
 
             self.nvim.api.win_set_buf(self.window, self.buffer)
-            self.nvim.command('silent $')
+            self.nvim.command("silent $")
 
         else:
             if len(self.nvim.windows) == 1:
-                self.nvim.command('sbuffer')
+                self.nvim.command("sbuffer")
             self._close_window()
 
         if cur_win == self.window or cur_win not in self.nvim.windows:
@@ -48,20 +41,20 @@ class Window:
         self.window = None
 
     def _command_comp(self, commands=()) -> str:
-        return ''.join('{0}|'.format(opt) for opt in commands).rstrip('|')
+        return "".join("{0}|".format(opt) for opt in commands).rstrip("|")
 
     def _create_terminal_window(self) -> None:
-        commands = ('sbuffer', 'resize 10')
+        commands = ("sbuffer", "resize 10")
         self.nvim.command(self._command_comp(commands))
         self.window = self.nvim.current.window
 
     def _create_terminal_buffer(self) -> None:
-        command = 'terminal python {0}'.format(MODULE_FILE)
+        command = "terminal python {0}".format(MODULE_FILE)
         post = (
-            'setlocal winhighlight=Normal:MsgArea',
-            'setlocal norelativenumber',
-            'setlocal nonumber',
-            'setlocal nobuflisted',
+            "setlocal winhighlight=Normal:MsgArea",
+            "setlocal norelativenumber",
+            "setlocal nonumber",
+            "setlocal nobuflisted",
         )
 
         self.nvim.command(command)
@@ -69,12 +62,38 @@ class Window:
         self.buffer = self.nvim.current.buffer
 
 
-def listen() -> None:
-    if ADDRESS is None:
-        raise ValueError
+def start_stream(address, streamer_address) -> None:
+    command = (
+        # fmt: off
+        'import sys;'
+        'sys.path.append("{0}") '
+        'if "{0}" not in sys.path else 0;'
+        'import streamer;'
+        'streamer.start({1});'
+        # fmt: on
+    )
 
+    sender.send_command(command.format(MODULE_PATH, streamer_address), address)
+
+
+def stop_stream(address) -> None:
+    sender.send_command("streamer.stop()", address)
+
+
+def keyboard_interrupt(function):
+    def wrap(**kwargs):
+        try:
+            function(**kwargs)
+        except KeyboardInterrupt:
+            pass
+
+    return wrap
+
+
+@keyboard_interrupt
+def listen() -> None:
     server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server.bind(ADDRESS)
+    server.bind(LOGGER_ADDRESS)
 
     while True:
         data = server.recvfrom(1024)
@@ -84,5 +103,6 @@ def listen() -> None:
         print(message.decode())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    start_stream(COMMAND_ADDRESS, LOGGER_ADDRESS)
     listen()
