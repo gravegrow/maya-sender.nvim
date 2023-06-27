@@ -1,13 +1,16 @@
+import os
 import sys
 
-from config import ADDRESS, PATH
 from pynvim import Nvim, command, plugin
+
+PATH = os.path.dirname(os.path.abspath(__file__))
 
 if PATH not in sys.path:
     sys.path.append(PATH)
 
     import log
     import sender
+    from config import COMMAND_ADDRESS, PATH
 
 
 @plugin
@@ -18,11 +21,11 @@ class MayaScriptEditor:
 
     @command("MayaSendSelection", sync=True)
     def send_selection(self):
-        sender.send_selection(self.nvim, ADDRESS)
+        sender.send_selection(self.nvim, COMMAND_ADDRESS)
 
     @command("MayaSendBuffer", sync=True)
     def send_buffer(self):
-        sender.send_buffer(self.nvim, ADDRESS)
+        sender.send_buffer(self.nvim, COMMAND_ADDRESS)
 
     # @command("MayaOpenLog", sync=True)
     # def toggle_log_widnow(self):
