@@ -1,6 +1,7 @@
 import os
 import sys
 
+import pynvim
 from pynvim import Nvim, command, plugin
 
 PATH = os.path.dirname(os.path.abspath(__file__))
@@ -14,7 +15,7 @@ if PATH not in sys.path:
 
 
 @plugin
-class MayaScriptEditor:
+class MayaSender:
     def __init__(self, nvim: Nvim):
         self.nvim = nvim
         self.log_window = log.Window(nvim)
