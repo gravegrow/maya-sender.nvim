@@ -1,6 +1,12 @@
+import os
 import socket
+import sys
 
-import sender
+PATH = os.path.dirname(os.path.abspath(__file__))
+if PATH not in sys.path:
+    sys.path.append(PATH)
+    import sender
+
 from config import COMMAND_ADDRESS, LOGGER_ADDRESS, MODULE_FILE, MODULE_PATH
 from pynvim import Nvim
 

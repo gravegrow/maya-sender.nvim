@@ -5,6 +5,11 @@ import pynvim
 from pynvim import Nvim, command, plugin
 
 PATH = os.path.dirname(os.path.abspath(__file__))
+DEVKIT = (
+    "/media/storage/dev/maya/devkitBase/devkit/other/Python27/pymel/extras/completion/py/"
+)
+
+sys.path.append(DEVKIT)
 
 if PATH not in sys.path:
     sys.path.append(PATH)
