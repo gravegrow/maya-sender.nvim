@@ -1,12 +1,9 @@
 import socket
 from io import StringIO
-from sys import version_info
 
-from maya.api import OpenMaya as om
+from maya.api import OpenMaya as om  # type: ignore
 
-BUFFER_SIZE = 8 * 1024
 MAYA_CLIENT = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-PYTHON_VERSION = version_info.major
 
 
 def start(address: tuple):
@@ -14,14 +11,6 @@ def start(address: tuple):
     if globals().get("CALLBACK") is None:
         add_callback = om.MCommandMessage.addCommandOutputCallback
         CALLBACK = add_callback(callback, address)
-
-
-def stop():
-    if globals().get("CALLBACK"):
-        CALLBACK = globals().get("CALLBACK")
-        print(f"Found callback: {CALLBACK}")
-        om.MMessage.removeCallback(CALLBACK)
-    CALLBACK = None
 
 
 def callback(message, mtype, address):
@@ -34,7 +23,7 @@ def callback(message, mtype, address):
     output.write(message.rstrip())
     output.seek(0)
 
-    messages = output.read(int(BUFFER_SIZE))
+    messages = output.read(int(8192))
     if not messages:
         output.close()
         return
@@ -53,15 +42,15 @@ class Colors:
     clear = "\u001b[0m"
 
 
-def prefix_format(color, msg):
+def fmt(color, msg):
     return "{0}{1}".format(color, msg)
 
 
 prefixes = {
-    om.MCommandMessage.kError: prefix_format(Colors.error, "ERROR: "),
-    om.MCommandMessage.kWarning: prefix_format(Colors.warning, "WARNING: "),
-    om.MCommandMessage.kResult: prefix_format(Colors.result, "RESULT: "),
-    om.MCommandMessage.kStackTrace: prefix_format(Colors.stack, "STACK: "),
+    om.MCommandMessage.kError: fmt(Colors.error, "ERROR: "),
+    om.MCommandMessage.kWarning: fmt(Colors.warning, "WARNING: "),
+    om.MCommandMessage.kResult: fmt(Colors.result, "RESULT: "),
+    om.MCommandMessage.kStackTrace: fmt(Colors.stack, "STACK: "),
     om.MCommandMessage.kInfo: Colors.info,
 }
 

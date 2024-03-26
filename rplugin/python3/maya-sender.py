@@ -1,38 +1,52 @@
 import sys
+import os
 
-from pynvim import Nvim, command, plugin
+import pynvim
 
 
 import sender
-from config import COMMAND_ADDRESS, PATH
 
+PATH = os.path.dirname(os.path.abspath(__file__))
 if PATH not in sys.path:
     sys.path.append(PATH)
 
 
-@plugin
+@pynvim.plugin
 class MayaSender:
-    def __init__(self, nvim: Nvim):
+    def __init__(self, nvim: pynvim.Nvim):
         self.nvim = nvim
 
-    @command("MayaSendSelection")
+        self.options = {
+            "address": "127.0.0.1",
+            "port": 5115,
+            "logger_port": 5116,
+        }
+
+        self.setup()
+
+    def setup(self):
+        for option, default in self.options.items():
+            try:
+                variable = f"MayaSender_{option}"
+                self.options[option] = self.nvim.eval(f"g:{variable}")
+            except self.nvim.error:
+                self.options[option] = default
+
+        self.ADDRESS = (self.options["address"], self.options["port"])
+
+    @pynvim.command("MayaSendSelection")
     def send_selection(self):
-        self._reload()
-        sender.send_selection(self.nvim, COMMAND_ADDRESS)
+        self._reload_project_module()
+        sender.send_selection(self.nvim, self.ADDRESS)
 
-    @command("MayaSendBuffer")
+    @pynvim.command("MayaSendBuffer")
     def send_buffer(self):
-        self._reload()
-        sender.send_buffer(self.nvim, COMMAND_ADDRESS)
+        self._reload_project_module()
+        sender.send_buffer(self.nvim, self.ADDRESS)
 
-    def _reload(self):
-        sender.send_command(
-            f'exec(open("{PATH + "/reloader.py"}").read())',
-            COMMAND_ADDRESS,
-        )
-
+    def _reload_project_module(self):
+        reloader_path = PATH + "/reloader.py"
         cwd = self.nvim.command_output("pwd")
-        sender.send_command(
-            f"import reloader; reloader.reload('{cwd}')",
-            COMMAND_ADDRESS,
-        )
+
+        sender.send_command(f'exec(open("{reloader_path}").read())', self.ADDRESS)
+        sender.send_command(f"import reloader; reloader.reload('{cwd}')", self.ADDRESS)
