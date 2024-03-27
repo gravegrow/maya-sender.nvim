@@ -1,4 +1,3 @@
-import sys
 import os
 
 import pynvim
@@ -7,8 +6,6 @@ import pynvim
 import sender
 
 PATH = os.path.dirname(os.path.abspath(__file__))
-if PATH not in sys.path:
-    sys.path.append(PATH)
 
 
 @pynvim.plugin
@@ -19,7 +16,6 @@ class MayaSender:
         self.options = {
             "address": "127.0.0.1",
             "port": 5115,
-            "logger_port": 5116,
         }
 
         self.setup()
@@ -45,8 +41,11 @@ class MayaSender:
         sender.send_buffer(self.nvim, self.ADDRESS)
 
     def _reload_project_module(self):
-        reloader_path = PATH + "/reloader.py"
         cwd = self.nvim.command_output("pwd")
 
-        sender.send_command(f'exec(open("{reloader_path}").read())', self.ADDRESS)
+        sender.send_command("import sys", self.ADDRESS)
+        sender.send_command(
+            f"if '{PATH}' not in sys.path:sys.path.append('{PATH}')",
+            self.ADDRESS,
+        )
         sender.send_command(f"import reloader; reloader.reload('{cwd}')", self.ADDRESS)
