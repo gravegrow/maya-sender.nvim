@@ -6,15 +6,8 @@ from pynvim import Nvim
 
 
 def send_buffer(nvim: Nvim, address: tuple) -> None:
-    with tempfile.NamedTemporaryFile("w", delete=False) as temp_file:
-        for line in nvim.current.buffer:
-            temp_file.write(f"{line}\n")
-
-    temp_file.close()
-    send_command(f'exec(open("{temp_file.name}").read())', address)
-
-    if os.path.isfile(temp_file.name):
-        os.remove(temp_file.name)
+    file = nvim.command_output('echo expand("%:p")')
+    send_command(f'exec(open("{file}").read())', address)
 
 
 def send_selection(nvim: Nvim, address) -> None:
