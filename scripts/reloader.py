@@ -22,3 +22,5 @@ def reload(project_path: str):
         is_env_package = package_path.startswith(project_path)
         if is_env_package:
             sys.modules.pop(key)
+
+    print(f"Reloaded '{project_path}'")

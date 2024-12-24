@@ -1,37 +1,34 @@
 import os
 import socket
-import sys
-
 import sender
-from config import COMMAND_ADDRESS, LOGGER_ADDRESS, MODULE_PATH
 
 PATH = os.path.dirname(os.path.abspath(__file__))
-if PATH not in sys.path:
-    sys.path.append(PATH)
+SENDER_ADDRESS = ("localhost", 5115)
+LOGGER_ADDRESS = ("localhost", 5116)
 
 
-def start_stream(address, streamer_address) -> None:
+def start_stream(host_address, logger_address) -> None:
     command = (
         # fmt: off
         "import sys;"
         'sys.path.append("{0}") '
         'if "{0}" not in sys.path else 0;'
-        "import utils.streamer as streamer;"
+        "import streamer as streamer;"
         "streamer.start({1});"
         # fmt: on
     )
 
-    sender.send_command(command.format(MODULE_PATH, streamer_address), address)
+    sender.send_command(command.format(PATH, logger_address), host_address)
 
 
-def stop_stream(address) -> None:
-    sender.send_command("streamer.stop()", address)
+def stop_stream(sender_address) -> None:
+    sender.send_command("streamer.stop()", sender_address)
 
 
 def keyboard_interrupt(function):
-    def wrap(**kwargs):
+    def wrap(*args, **kwargs):
         try:
-            function(**kwargs)
+            function(*args, **kwargs)
         except KeyboardInterrupt:
             pass
 
@@ -39,9 +36,9 @@ def keyboard_interrupt(function):
 
 
 @keyboard_interrupt
-def listen() -> None:
+def listen(logger_address) -> None:
     server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    server.bind(LOGGER_ADDRESS)
+    server.bind(logger_address)
 
     while True:
         data = server.recvfrom(1024)
@@ -52,5 +49,5 @@ def listen() -> None:
 
 
 if __name__ == "__main__":
-    start_stream(COMMAND_ADDRESS, LOGGER_ADDRESS)
-    listen()
+    start_stream(SENDER_ADDRESS, LOGGER_ADDRESS)
+    listen(LOGGER_ADDRESS)
