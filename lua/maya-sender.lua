@@ -39,34 +39,52 @@ local function register_scripts_command()
 	return scripts_path.value
 end
 
-local function maya_command(command)
+local function sender_command(command)
 	command = string.gsub(command, "'", '"')
 	return string.format("import sender; sender.send_command('%s', ('%s', %d))", command, M.opts.host, M.opts.port)
+end
+
+local reload_project_command = function()
+	return string.format("import reloader; reloader.reload('%s')", vim.fn.getcwd())
 end
 
 M.send = function(command)
 	local send_command = Builder.new()
 	local reg_scripts = register_scripts_command()
 	send_command:append(reg_scripts)
-	send_command:append(maya_command(reg_scripts))
-	send_command:append(maya_command(command))
+	send_command:append(sender_command(reg_scripts))
+	send_command:append(sender_command(command))
 
 	run(send_command.value)
 end
 
-M.reload_project = function() end
-
-M.send_buffer = function()
-	-- register_scripts()
-	local file = vim.fs.joinpath(vim.fn.getcwd(), vim.fn.expand("%"))
+M.send_file = function(file)
+	file = file or vim.fs.joinpath(vim.fn.getcwd(), vim.fn.expand("%"))
+	M.send(reload_project_command())
 	M.send("exec(open('" .. file .. "').read())")
 end
+
+M.send_selection = function()
+	local vstart = vim.fn.getpos("v")
+	local vend = vim.fn.getpos(".")
+
+	local line_start = vstart[2]
+	local line_end = vend[2]
+
+	local lines = vim.fn.getline(line_start, line_end)
+	local temp_file = vim.fn.tempname()
+	vim.fn.writefile(lines, temp_file)
+	M.send_file(temp_file)
+end
+
+vim.api.nvim_create_user_command("MayaSendSelection", M.send_selection, {})
+vim.api.nvim_create_user_command("MayaSendBuffer", function()
+	M.send_file()
+end, {})
 
 M.setup = function(opts)
 	opts = opts or {}
 	vim.tbl_extend("force", M.opts, opts)
 end
-
-vim.api.nvim_create_user_command("MayaSendBuffer", M.send_buffer, {})
 
 return M
