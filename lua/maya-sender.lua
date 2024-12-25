@@ -14,42 +14,52 @@ end
 local Builder = {}
 Builder.new = function()
 	return {
-		command = nil,
+		value = nil,
 		append = function(self, value)
 			if not value then
 				return
 			end
-			if not self.command then
-				self.command = value
+			if not self.value then
+				self.value = value
 				return
 			end
-			self.command = self.command .. "; " .. value
+			self.value = self.value .. "; " .. value
 		end,
 	}
 end
 
-M.send_command = function(command)
+local function register_scripts_command()
 	local plugin_file = debug.getinfo(1, "S").source:sub(2)
 	local plugin_root = vim.fs.root(plugin_file, { ".git" })
-	local scripts = vim.fs.joinpath(plugin_root, "scripts/")
-	local project_path = vim.fn.getcwd()
+	local scripts = vim.fs.joinpath(plugin_root, "scripts")
 
-	command = string.gsub(command, "'", '"')
-	command = string.format("sender.send_command('%s', ('%s', %d))", command, M.opts.host, M.opts.port)
-
-	local builder = Builder.new()
-	builder:append("import sys")
-	builder:append('sys.path.append("' .. scripts .. '") if "' .. scripts .. '" not in sys.path else False')
-	builder:append("import sender")
-	builder:append(command)
-	-- TODO: add reloader
-
-	run(builder.command)
+	local scripts_path = Builder.new()
+	scripts_path:append("import sys")
+	scripts_path:append("sys.path.append('" .. scripts .. "') if '" .. scripts .. "' not in sys.path else False")
+	return scripts_path.value
 end
 
+local function maya_command(command)
+	command = string.gsub(command, "'", '"')
+	return string.format("import sender; sender.send_command('%s', ('%s', %d))", command, M.opts.host, M.opts.port)
+end
+
+M.send = function(command)
+	local send_command = Builder.new()
+	local reg_scripts = register_scripts_command()
+	send_command:append(reg_scripts)
+	send_command:append(maya_command(reg_scripts))
+	send_command:append(maya_command(command))
+
+	run(send_command.value)
+end
+
+M.reload_project = function() end
+
 M.send_buffer = function()
+	-- register_scripts()
 	local file = vim.fs.joinpath(vim.fn.getcwd(), vim.fn.expand("%"))
-	M.send_command("exec(open('" .. file .. "').read())")
+	M.send("exec(open('" .. file .. "').read())")
 end
 
 M.setup = function(opts)
