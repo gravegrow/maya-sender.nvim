@@ -3,6 +3,7 @@ local M = {}
 M.opts = {
   host = "localhost",
   port = 5115,
+  project_markers = { ".git", "pyproject.toml" },
 }
 
 local run = function(command) return vim.system({ "python", "-c", command }, {}) end
@@ -24,7 +25,7 @@ end
 
 local function register_scripts_command()
   local plugin_file = debug.getinfo(1, "S").source:sub(2)
-  local plugin_root = vim.fs.root(plugin_file, { ".git", "pyproject.toml" })
+  local plugin_root = vim.fs.root(plugin_file, M.opts.project_markers)
   local scripts = vim.fs.joinpath(plugin_root, "scripts")
 
   local scripts_path = CommandComposer.new()
