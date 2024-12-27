@@ -73,15 +73,12 @@ M.send_file = function()
 end
 
 M.send_selection = function()
-  local vstart = vim.fn.getpos("v")
-  local vend = vim.fn.getpos(".")
+  vim.fn.setreg("9", vim.fn.getreg("0")) -- store last yank in reg 9
+  vim.cmd(':normal! "0y') -- yank selection
+  local lines = vim.split(vim.fn.getreg("0"), "\n") -- get lines from reg 0
+  vim.fn.setreg('"', vim.fn.getreg("9")) -- restore last yank from 9
 
-  local line_start = vstart[2]
-  local line_end = vend[2]
-
-  local lines = vim.fn.getline(line_start, line_end)
   local temp_file = vim.fn.tempname()
-
   vim.fn.writefile(lines, temp_file)
   send_file(temp_file)
 end
