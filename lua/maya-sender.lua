@@ -3,7 +3,6 @@ local M = {}
 M.opts = {
   host = "localhost",
   port = 5115,
-  project_markers = { ".git", "pyproject.toml" },
 }
 
 local run = function(command) return vim.system({ "python", "-c", command }, {}) end
@@ -13,7 +12,6 @@ CommandComposer.new = function()
   return {
     value = nil,
     append = function(self, value)
-      if not value then return end
       if not self.value then
         self.value = value
         return
@@ -23,21 +21,26 @@ CommandComposer.new = function()
   }
 end
 
+local function append_path_command(path)
+  local command = CommandComposer.new()
+  command:append("import sys")
+  command:append(
+    string.format("sys.path.append('%s') if '%s' not in sys.path else False", path, path)
+  )
+  return command.value
+end
+
 local function register_scripts_command()
   local plugin_file = debug.getinfo(1, "S").source:sub(2)
-  local plugin_root = vim.fs.root(plugin_file, M.opts.project_markers)
+  local plugin_root = vim.fs.root(plugin_file, { ".git", "stylua.toml" })
   local scripts = vim.fs.joinpath(plugin_root, "scripts")
 
-  local scripts_path = CommandComposer.new()
-  scripts_path:append("import sys")
-  scripts_path:append(
-    string.format(
-      "sys.path.append('%s') if '%s' not in sys.path else False",
-      scripts,
-      scripts
-    )
-  )
-  return scripts_path.value
+  return append_path_command(scripts)
+end
+
+local function project_to_path_command()
+  local project = vim.fn.getcwd()
+  return append_path_command(project)
 end
 
 local function sender_command(command)
@@ -59,6 +62,7 @@ M.send = function(command)
   local reg_scripts = register_scripts_command()
   send_command:append(reg_scripts)
   send_command:append(sender_command(reg_scripts))
+  send_command:append(sender_command(project_to_path_command()))
   send_command:append(sender_command(command))
 
   run(send_command.value)
