@@ -38,9 +38,9 @@ local function register_scripts_command()
   return append_path_command(scripts)
 end
 
-local function project_to_path_command()
-  local project = vim.fn.getcwd()
-  return append_path_command(project)
+local function project_to_path_command(project_path)
+  project_path = project_path or vim.fn.getcwd()
+  return append_path_command(project_path)
 end
 
 local function sender_command(command)
@@ -53,8 +53,10 @@ local function sender_command(command)
   )
 end
 
-local reload_project_command = function()
-  return string.format("import reloader; reloader.reload('%s')", vim.fn.getcwd())
+--- @param project_path string
+local reload_project_command = function(project_path)
+  project_path = project_path or vim.fn.getcwd()
+  return string.format("import reloader; reloader.reload('%s')", project_path)
 end
 
 M.send = function(command)
@@ -71,9 +73,11 @@ end
 local function send_file(file) M.send("exec(open('" .. file .. "').read())") end
 
 M.send_file = function()
-  local file = vim.fs.joinpath(vim.fn.getcwd(), vim.fn.expand("%"))
-  M.send(reload_project_command())
-  send_file(file)
+  local file_path = vim.fn.expand("%:p")
+  local project_path = vim.fn.getcwd()
+
+  M.send(reload_project_command(project_path))
+  send_file(file_path)
 end
 
 M.send_selection = function()
